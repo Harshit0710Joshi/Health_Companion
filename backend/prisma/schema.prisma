@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  appointments Appointment[]
+  records      Record[]
+  vitals       Vital?
+  chatMessages ChatMessage[]
+  createdAt    DateTime      @default(now())
+}
+
+model Doctor {
+  id             Int           @id @default(autoincrement())
+  name           String
+  email          String        @unique @default("doctor@medicare.local")
+  password       String        @default("$2a$10$abcdefghijklmnopqrstuv") // Default hashed password for existing doctors
+  specialization String
+  rating         Float
+  experience     String
+  fee            String
+  initials       String
+  color          String
+  appointments   Appointment[]
+}
+
+model Appointment {
+  id       Int    @id @default(autoincrement())
+  date     String
+  time     String
+  status   String @default("Scheduled") // "Scheduled", "Completed", "Cancelled"
+  notes    String @default("")
+  roomId   String @default("")
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
+  doctorId Int
+  doctor   Doctor @relation(fields: [doctorId], references: [id])
+}
+
+model Record {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+  date        String
+  type        String
+  userId      Int
+  user        User   @relation(fields: [userId], references: [id])
+}
+
+model Vital {
+  id            Int    @id @default(autoincrement())
+  heartRate     String
+  bloodPressure String
+  sugarLevel    String
+  medications   String
+  userId        Int    @unique
+  user          User   @relation(fields: [userId], references: [id])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  role      String // "user" or "ai"
+  text      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}

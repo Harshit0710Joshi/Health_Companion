@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MediCare AI – Design System
+   All colors MUST be HSL. Soft healthcare palette: sky blue, mint, white, slate.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 99%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    /* Calm medical blue */
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 199 95% 94%;
+    --primary-glow: 199 89% 65%;
+
+    /* Mint accent (health/wellness) */
+    --secondary: 165 70% 95%;
+    --secondary-foreground: 168 72% 24%;
+
+    --accent: 165 64% 52%;
+    --accent-foreground: 0 0% 100%;
+    --accent-soft: 165 70% 95%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 95% 56%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(199 95% 96%) 0%, hsl(165 80% 96%) 50%, hsl(210 40% 99%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(199 89% 55%) 0%, hsl(199 89% 48%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(165 64% 52%) 0%, hsl(199 89% 48%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 1px 2px 0 hsl(215 28% 17% / 0.04), 0 1px 3px 0 hsl(215 28% 17% / 0.06);
+    --shadow-card: 0 4px 20px -4px hsl(199 89% 48% / 0.08), 0 2px 8px -2px hsl(215 28% 17% / 0.04);
+    --shadow-glow: 0 10px 40px -10px hsl(199 89% 48% / 0.35);
+    --shadow-elevated: 0 20px 50px -20px hsl(199 89% 48% / 0.25);
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 28% 27%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 199 95% 96%;
+    --sidebar-accent-foreground: 199 89% 38%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 199 89% 48%;
+  }
+
+  .dark {
+    --background: 215 32% 9%;
+    --foreground: 210 40% 98%;
+    --card: 215 28% 12%;
+    --card-foreground: 210 40% 98%;
+    --popover: 215 28% 12%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 55%;
+    --primary-foreground: 215 32% 9%;
+    --primary-soft: 199 60% 18%;
+    --primary-glow: 199 89% 65%;
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 165 70% 75%;
+    --accent: 165 64% 52%;
+    --accent-foreground: 215 32% 9%;
+    --accent-soft: 165 40% 18%;
+    --muted: 215 25% 16%;
+    --muted-foreground: 215 16% 65%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
+    --ring: 199 89% 55%;
+    --gradient-hero: linear-gradient(135deg, hsl(215 32% 11%) 0%, hsl(199 40% 14%) 50%, hsl(215 32% 9%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(215 28% 13%) 0%, hsl(215 28% 11%) 100%);
+    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --sidebar-background: 215 28% 11%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 199 89% 55%;
+    --sidebar-primary-foreground: 215 32% 9%;
+    --sidebar-accent: 215 25% 16%;
+    --sidebar-accent-foreground: 199 89% 75%;
+    --sidebar-border: 215 25% 18%;
+    --sidebar-ring: 199 89% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    @apply tracking-tight;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-hero { background: var(--gradient-hero); }
+  .bg-gradient-primary { background: var(--gradient-primary); }
+  .bg-gradient-accent { background: var(--gradient-accent); }
+  .bg-gradient-card { background: var(--gradient-card); }
+
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
+
+  .transition-smooth { transition: var(--transition-smooth); }
+  .transition-bounce { transition: var(--transition-bounce); }
+}
+
+/* Typing dots animation */
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+.typing-dot {
+  animation: typing-bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.animate-float { animation: float-slow 6s ease-in-out infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.5s ease-out both; }
