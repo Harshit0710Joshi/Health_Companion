@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, getErrorMessage } from "@/lib/api";
 
-interface HealthRecord { id: number; title: string; description: string; date: string; type: string; }
+interface HealthRecord { id: string; title: string; description: string; date: string; type: string; }
 type NewHealthRecord = Omit<HealthRecord, "id">;
 
 const Records = () => {

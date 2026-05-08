@@ -7,7 +7,7 @@ import { apiFetch, removeAuthToken, getAuthRole } from "@/lib/api";
 import { toast } from "sonner";
 
 interface DoctorAppointment {
-  id: number;
+  id: string;
   patient: string;
   doctor: string;
   spec: string;

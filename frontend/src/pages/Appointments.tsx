@@ -11,9 +11,9 @@ import { apiFetch, getErrorMessage } from "@/lib/api";
 
 const slots = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"];
 
-interface Appt { id: number; doctor: string; spec: string; date: string; time: string; status: string; roomId: string; }
+interface Appt { id: string; doctor: string; spec: string; date: string; time: string; status: string; roomId: string; }
 interface Doctor {
-  id: number;
+  id: string;
   name: string;
   specialization: string;
   rating: number;
@@ -25,7 +25,7 @@ interface Doctor {
 
 const Appointments = () => {
   const queryClient = useQueryClient();
-  const [selectedDoc, setSelectedDoc] = useState<number | null>(1);
+  const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [date, setDate] = useState(new Date(Date.now() + 86400000).toISOString().split("T")[0]);
   const [time, setTime] = useState("10:30");
 
@@ -40,7 +40,7 @@ const Appointments = () => {
   });
 
   const bookMutation = useMutation({
-    mutationFn: (newAppt: { doctorId: number; date: string; time: string }) => {
+    mutationFn: (newAppt: { doctorId: string; date: string; time: string }) => {
       return apiFetch<Appt>('/appointments', { method: 'POST', data: newAppt });
     },
     onSuccess: (data) => {

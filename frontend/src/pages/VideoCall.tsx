@@ -13,7 +13,7 @@ import { toast } from "sonner";
 const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 interface AppointmentDetails {
-  id: number;
+  id: string;
   doctor: string;
   patient: string;
   spec: string;
@@ -29,7 +29,7 @@ const VideoCall = () => {
   const location = useLocation();
   const isDoctorRoute = location.pathname.startsWith("/doctor");
   const backPath = isDoctorRoute ? "/doctor/appointments" : "/appointments";
-  const appointmentId = Number(id);
+  const appointmentId = id;
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -48,7 +48,7 @@ const VideoCall = () => {
   const { data: appointment, isLoading } = useQuery<AppointmentDetails>({
     queryKey: ["appointment", appointmentId],
     queryFn: () => apiFetch<AppointmentDetails>(`/appointments/${appointmentId}`),
-    enabled: Number.isInteger(appointmentId),
+    enabled: !!appointmentId,
   });
 
   const stopLocalStream = useCallback(() => {
