@@ -156,7 +156,7 @@ app.post('/api/appointments/:id/complete', authenticateToken, async (req, res) =
   
   try {
     const appointment = await prisma.appointment.update({
-      where: { id: parseInt(id) },
+      where: { id: id },
       data: { status: 'Completed', notes: notes || "" }
     });
     res.json(appointment);
@@ -170,7 +170,7 @@ app.get('/api/appointments/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     const appointment = await prisma.appointment.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: id },
       include: { doctor: true, user: true }
     });
     
@@ -232,7 +232,7 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
         date,
         time,
         userId: req.user.id,
-        doctorId: parseInt(doctorId),
+        doctorId: doctorId,
         status: 'Scheduled',
         roomId: `room-${Math.random().toString(36).substr(2, 9)}`
       },
