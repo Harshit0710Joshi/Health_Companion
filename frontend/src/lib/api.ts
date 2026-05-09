@@ -45,8 +45,12 @@ export async function apiFetch<T = unknown>(endpoint: string, options: FetchOpti
   const response = await fetch(`${API_URL}${endpoint}`, config);
 
   if (response.status === 401) {
-    removeAuthToken();
-    window.location.href = '/login';
+    const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+    if (!isLoginPage && getAuthToken()) {
+      console.warn("Session expired or unauthorized. Logging out...");
+      removeAuthToken();
+      window.location.href = '/login';
+    }
     throw new Error('Unauthorized');
   }
 
@@ -54,6 +58,7 @@ export async function apiFetch<T = unknown>(endpoint: string, options: FetchOpti
 
   if (!response.ok) {
     const errorResult = result as { error?: string };
+    console.error(`API Error [${response.status}] ${endpoint}:`, errorResult.error);
     throw new Error(errorResult.error || 'API request failed');
   }
 

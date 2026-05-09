@@ -4,17 +4,11 @@ const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const ragService = require('./rag-service');
 require('dotenv').config();
 
 const app = express();
 const prisma = new PrismaClient();
-
-// Initialize Google AI
-const genAI = new GoogleGenerativeAI(process.env.OPENAI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash",
-  systemInstruction: "You are a helpful and knowledgeable Health Companion AI assistant. You help users understand their symptoms, provide basic health advice (always with a disclaimer to see a doctor), and keep track of their health journey. Be empathetic, concise, and professional."
-});
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
@@ -34,12 +28,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 // Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
+  console.log(`[AUTH] ${req.method} ${req.url} - Header: ${authHeader ? 'Present' : 'Missing'}`);
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) return res.status(401).json({ error: 'Access token required' });
+  if (!token) {
+    console.log(`[AUTH] 401 Unauthorized - No token for ${req.url}`);
+    return res.status(401).json({ error: 'Access token required' });
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    if (err) {
+      console.log(`[AUTH] 403 Forbidden - Invalid token: ${err.message}`);
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
     req.user = user;
     next();
   });
@@ -53,7 +54,7 @@ app.post('/api/auth/register', async (req, res) => {
     const user = await prisma.user.create({
       data: { name, email, password: hashedPassword }
     });
-    const token = jwt.sign({ id: user.id, email: user.email, role: 'patient' }, JWT_SECRET);
+    const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: 'patient' }, JWT_SECRET);
     res.json({ token, user: { id: user.id, name: user.name, email: user.email }, role: 'patient' });
   } catch (error) {
     res.status(400).json({ error: 'User already exists or invalid data' });
@@ -92,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, role: 'patient' }, JWT_SECRET);
+    const token = jwt.sign({ id: user.id, email: user.email, name: user.name, role: 'patient' }, JWT_SECRET);
     res.json({ token, user: { id: user.id, name: user.name, email: user.email }, role: 'patient' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -226,15 +227,17 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
 
 app.post('/api/appointments', authenticateToken, async (req, res) => {
   const { doctorId, date, time } = req.body;
+  console.log(`[APPT] Creating appointment: User=${req.user.id}, Doctor=${doctorId}, Date=${date}, Time=${time}`);
+  
   try {
     const appointment = await prisma.appointment.create({
       data: {
         date,
         time,
-        userId: req.user.id,
-        doctorId: doctorId,
         status: 'Scheduled',
-        roomId: `room-${Math.random().toString(36).substr(2, 9)}`
+        roomId: `room-${Math.random().toString(36).substr(2, 9)}`,
+        user: { connect: { id: req.user.id } },
+        doctor: { connect: { id: doctorId } }
       },
       include: { doctor: true }
     });
@@ -249,12 +252,24 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
       roomId: appointment.roomId
     });
   } catch (error) {
+    console.error("[APPT] Create Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Vitals Routes
+app.get('/api/vitals', authenticateToken, async (req, res) => {
+  // In a real app, this would come from the DB or a connected device
+  res.json({
+    heartRate: "72",
+    bloodPressure: "120/80",
+    sugarLevel: "95",
+    medications: "3"
+  });
+});
+
+
 // Chat Routes
-const ragService = require('./rag-service');
 
 app.get('/api/chat', authenticateToken, async (req, res) => {
   try {
@@ -281,13 +296,16 @@ app.delete('/api/chat', authenticateToken, async (req, res) => {
 
 app.post('/api/chat', authenticateToken, async (req, res) => {
   const { text } = req.body;
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: 'Message text is required' });
+  }
   try {
     // 1. Save user message
     await prisma.chatMessage.create({
       data: { text, role: 'user', userId: req.user.id }
     });
 
-    // 2. Get AI response using RAG
+    // 2. Fetch recent chat history for context
     const history = await prisma.chatMessage.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' },
@@ -299,17 +317,31 @@ app.post('/api/chat', authenticateToken, async (req, res) => {
       parts: [{ text: m.text }]
     }));
 
+    // 3. Get AI response
     const aiResponse = await ragService.getRAGResponse(text, chatHistory);
 
-    // 3. Save AI message
+    // 4. Save and return AI message
     const savedAiMsg = await prisma.chatMessage.create({
       data: { text: aiResponse, role: 'ai', userId: req.user.id }
     });
 
     res.json(savedAiMsg);
   } catch (error) {
-    console.error("Chat Error:", error);
-    res.status(500).json({ error: "AI communication failed" });
+    console.error('[CHAT] Error:', error.message || error);
+    res.status(500).json({ error: `AI communication failed: ${error.message}` });
+  }
+});
+
+app.get('/api/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await (req.user.role === 'doctor' 
+      ? prisma.doctor.findUnique({ where: { id: req.user.id } })
+      : prisma.user.findUnique({ where: { id: req.user.id } }));
+    
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ id: user.id, name: user.name, email: user.email, role: req.user.role });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

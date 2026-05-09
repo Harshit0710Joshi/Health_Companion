@@ -59,7 +59,10 @@ const Index = () => {
             <h1 className="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-foreground">
               Quality healthcare,
               <br />
-              <span className="bg-gradient-primary bg-clip-text text-transparent">closer than ever.</span>
+              <span className="text-primary relative inline-block">
+                closer than ever.
+                <span className="absolute bottom-2 left-0 w-full h-[0.2em] bg-primary/10 -z-10 rounded-full" />
+              </span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
               MediCare AI brings doctors, intelligent triage and digital records to rural communities — no clinic queues, no travel hours, no paperwork.

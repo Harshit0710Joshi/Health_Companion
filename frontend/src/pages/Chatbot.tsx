@@ -93,6 +93,11 @@ const Chatbot = () => {
     recognition.start();
   };
 
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiFetch<{ name: string }>('/me')
+  });
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     send(input);
@@ -120,7 +125,11 @@ const Chatbot = () => {
               variant="ghost" 
               size="sm" 
               className="text-xs font-semibold rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              onClick={() => clearMutation.mutate()}
+              onClick={() => {
+                if (confirm("Are you sure you want to clear your chat history?")) {
+                  clearMutation.mutate();
+                }
+              }}
               disabled={messages.length === 0 || clearMutation.isPending}
             >
               Clear Chat
@@ -148,7 +157,7 @@ const Chatbot = () => {
               </div>
               {m.role === "user" && (
                 <div className="h-9 w-9 rounded-xl bg-gradient-accent flex items-center justify-center shrink-0 text-primary-foreground font-bold text-sm">
-                  A
+                  {user?.name?.[0] || "U"}
                 </div>
               )}
             </div>

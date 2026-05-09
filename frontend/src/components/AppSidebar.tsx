@@ -6,7 +6,8 @@ import {
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
-import { removeAuthToken } from "@/lib/api";
+import { apiFetch, removeAuthToken } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -19,6 +20,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
+
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiFetch<{ name: string; role: string }>('/me'),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const logout = () => {
     removeAuthToken();
@@ -68,11 +75,11 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="flex items-center gap-3 px-2 py-1">
              <div className="h-9 w-9 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-bold text-xs">
-                AJ
+                {user?.name?.split(' ').map(n => n[0]).join('') || "U"}
              </div>
              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold truncate">Alex Johnson</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Basic Plan</div>
+                <div className="text-xs font-bold truncate">{user?.name || "User"}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">{user?.role || "Patient"}</div>
              </div>
           </div>
         )}

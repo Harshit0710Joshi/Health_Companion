@@ -28,7 +28,7 @@ const VideoCall = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isDoctorRoute = location.pathname.startsWith("/doctor");
-  const backPath = isDoctorRoute ? "/doctor/appointments" : "/appointments";
+  const backPath = isDoctorRoute ? "/doctor/appointments" : "/dashboard";
   const appointmentId = id;
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -36,8 +36,16 @@ const VideoCall = () => {
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const socketRef = useRef<Socket | null>(null);
   
+  const [callStarted, setCallStarted] = useState(false);
+  const [remoteJoined, setRemoteJoined] = useState(false);
+  const [micMuted, setMicMuted] = useState(false);
+  const [cameraOff, setCameraOff] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [completing, setCompleting] = useState(false);
+  const [status, setStatus] = useState("Ready to start secure consultation");
+  const [error, setError] = useState("");
   const [showControls, setShowControls] = useState(true);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const controlsTimeoutRef = useRef<any>(null);
 
   const handleMouseMove = () => {
     setShowControls(true);
@@ -269,9 +277,12 @@ const VideoCall = () => {
                           {completing ? "Finalizing..." : "End & Complete"}
                        </Button>
                      ) : (
-                       <Button variant="destructive" size="lg" className="px-8 rounded-full h-14" onClick={() => navigate(backPath)}>
-                          <PhoneOff className="mr-2 h-5 w-5" /> End Call
-                       </Button>
+                        <Button variant="destructive" size="lg" className="px-8 rounded-full h-14" onClick={() => {
+                          endCall();
+                          navigate("/dashboard");
+                        }}>
+                           <PhoneOff className="mr-2 h-5 w-5" /> End Call
+                        </Button>
                      )}
                    </>
                 )}

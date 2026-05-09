@@ -3,6 +3,8 @@ import { Bell, Search } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 interface Props {
   children: ReactNode;
@@ -11,6 +13,12 @@ interface Props {
 }
 
 export const DashboardLayout = ({ children, title, subtitle }: Props) => {
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiFetch<{ name: string; role: string }>('/me'),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-muted/30">
@@ -34,11 +42,11 @@ export const DashboardLayout = ({ children, title, subtitle }: Props) => {
               
               <div className="flex items-center gap-3 pl-1">
                 <div className="hidden lg:block text-right">
-                  <div className="text-sm font-bold leading-none">Alex Johnson</div>
-                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-1">Patient</div>
+                  <div className="text-sm font-bold leading-none">{user?.name || "User"}</div>
+                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-1">{user?.role || "Patient"}</div>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-soft cursor-pointer hover:scale-105 transition-bounce border-2 border-background ring-1 ring-primary/10">
-                  A
+                  {user?.name?.[0] || "U"}
                 </div>
               </div>
             </div>
