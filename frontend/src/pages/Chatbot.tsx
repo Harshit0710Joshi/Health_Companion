@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Send, Bot, Sparkles } from "lucide-react";
+import { Send, Bot, Sparkles, Mic, MicOff } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { apiFetch, getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 
 interface Message {
-  id: number;
+  id: string;
   role: "user" | "ai";
   text: string;
 }
@@ -16,7 +16,17 @@ interface Message {
 const Chatbot = () => {
   const queryClient = useQueryClient();
   const [input, setInput] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const clearMutation = useMutation({
+    mutationFn: () => apiFetch('/chat', { method: 'DELETE' }), // Assuming backend supports DELETE /api/chat
+    onSuccess: () => {
+      queryClient.setQueryData(['chat'], []);
+      toast.success("Conversation cleared");
+    }
+  });
 
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ['chat'],
@@ -51,6 +61,38 @@ const Chatbot = () => {
     chatMutation.mutate(text);
   };
 
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Your browser does not support voice input.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      send(transcript); // Automatically send after speaking
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     send(input);
@@ -72,6 +114,17 @@ const Chatbot = () => {
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Sparkles className="h-3 w-3" /> Always here to help
             </p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs font-semibold rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={() => clearMutation.mutate()}
+              disabled={messages.length === 0 || clearMutation.isPending}
+            >
+              Clear Chat
+            </Button>
           </div>
         </div>
 
@@ -142,6 +195,15 @@ const Chatbot = () => {
             placeholder="Describe how you're feeling…"
             className="h-12 rounded-xl flex-1"
           />
+          <Button 
+            type="button" 
+            variant={isListening ? "destructive" : "soft"} 
+            size="icon" 
+            className="h-12 w-12 rounded-xl shrink-0"
+            onClick={toggleListening}
+          >
+            {isListening ? <MicOff className="h-5 w-5 animate-pulse" /> : <Mic className="h-5 w-5" />}
+          </Button>
           <Button type="submit" variant="hero" size="icon" className="h-12 w-12 rounded-xl" disabled={!input.trim() || chatMutation.isPending}>
             <Send className="h-5 w-5" />
           </Button>

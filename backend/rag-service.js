@@ -38,26 +38,54 @@ class RAGService {
     }
   }
 
-  // The main Chat function with RAG logic
+  // The main Chat function with Smart RAG logic
   async getRAGResponse(userQuery, chatHistory = []) {
-    // 1. Retrieve facts from Pinecone
-    const medicalFacts = await this.queryKnowledgeBase(userQuery);
+    // 1. First, use LLM to extract entities (Symptoms, Age, Duration)
+    const extractionPrompt = `
+      Extract key health entities from this query: "${userQuery}"
+      Return ONLY a JSON object with: { "symptoms": [], "duration": "", "age": "", "intent": "" }
+    `;
+    
+    let entities = { symptoms: [], duration: "Not specified", age: "Not specified", intent: "General Inquiry" };
+    try {
+      const extractionResult = await this.model.generateContent(extractionPrompt);
+      const text = extractionResult.response.text();
+      const jsonMatch = text.match(/\{.*\}/s);
+      if (jsonMatch) entities = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.warn("Entity extraction failed, proceeding with raw query.");
+    }
 
-    // 2. Build a smart prompt with the facts
+    // 2. Retrieve facts from Pinecone using the extracted symptoms + raw query
+    const searchQuery = entities.symptoms.length > 0 
+      ? `${entities.symptoms.join(', ')} - ${userQuery}`
+      : userQuery;
+    
+    const medicalFacts = await this.queryKnowledgeBase(searchQuery);
+
+    // 3. Build a high-end evidence-based prompt
     const systemPrompt = `
-      You are a high-end Virtual Health Assistant. 
-      Use the following verified medical context to answer the user's question.
-      If the context doesn't contain the answer, use your general medical knowledge but be extra cautious.
+      You are an advanced virtual Health Companion. 
       
-      VERIFIED CONTEXT:
-      ${medicalFacts || "No specific context found. Use general guidance."}
+      PATIENT CONTEXT:
+      - Symptoms identified: ${entities.symptoms.join(', ') || 'None identified'}
+      - Duration: ${entities.duration}
+      - Patient Age: ${entities.age}
+      - Detected Intent: ${entities.intent}
+
+      VERIFIED MEDICAL DATA (from Knowledge Base):
+      ${medicalFacts || "No specific context found. Use professional medical logic."}
       
-      USER QUESTION: ${userQuery}
-      
-      REMEMBER: Always include a professional medical disclaimer. Be empathetic and concise.
+      INSTRUCTIONS:
+      1. Provide a context-aware, empathetic response based on the patient's age and duration of symptoms.
+      2. If symptoms suggest an emergency (e.g., chest pain, difficulty breathing), immediately advise seeking emergency care.
+      3. Use the verified data to explain possible causes but NEVER provide a definitive diagnosis.
+      4. Always end with a professional health disclaimer.
+
+      USER QUERY: ${userQuery}
     `;
 
-    // 3. Generate the response using Gemini
+    // 4. Generate the final response
     const chat = this.model.startChat({ history: chatHistory });
     const result = await chat.sendMessage(systemPrompt);
     return result.response.text();

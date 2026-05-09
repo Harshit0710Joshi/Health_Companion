@@ -24,13 +24,22 @@ export const DashboardLayout = ({ children, title, subtitle }: Props) => {
                 <Input placeholder="Search…" className="pl-9 h-9 bg-muted/50 border-transparent focus-visible:bg-background" />
               </div>
             </div>
-            <div className="ml-auto flex items-center gap-3">
-              <button className="relative h-10 w-10 rounded-xl hover:bg-muted flex items-center justify-center transition-smooth">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent" />
+            <div className="ml-auto flex items-center gap-2 md:gap-4">
+              <button className="relative h-10 w-10 rounded-xl hover:bg-muted flex items-center justify-center transition-smooth group">
+                <Bell className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-destructive border-2 border-background animate-pulse" />
               </button>
-              <div className="h-10 w-10 rounded-xl bg-gradient-accent flex items-center justify-center text-primary-foreground font-bold text-sm shadow-soft">
-                A
+              
+              <div className="h-8 w-px bg-border mx-1 hidden sm:block" />
+              
+              <div className="flex items-center gap-3 pl-1">
+                <div className="hidden lg:block text-right">
+                  <div className="text-sm font-bold leading-none">Alex Johnson</div>
+                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-1">Patient</div>
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shadow-soft cursor-pointer hover:scale-105 transition-bounce border-2 border-background ring-1 ring-primary/10">
+                  A
+                </div>
               </div>
             </div>
           </header>

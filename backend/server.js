@@ -268,6 +268,17 @@ app.get('/api/chat', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/chat', authenticateToken, async (req, res) => {
+  try {
+    await prisma.chatMessage.deleteMany({
+      where: { userId: req.user.id }
+    });
+    res.json({ message: "Chat history cleared" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/chat', authenticateToken, async (req, res) => {
   const { text } = req.body;
   try {

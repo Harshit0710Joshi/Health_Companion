@@ -36,14 +36,23 @@ const VideoCall = () => {
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const socketRef = useRef<Socket | null>(null);
   
-  const [callStarted, setCallStarted] = useState(false);
-  const [remoteJoined, setRemoteJoined] = useState(false);
-  const [micMuted, setMicMuted] = useState(false);
-  const [cameraOff, setCameraOff] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [completing, setCompleting] = useState(false);
-  const [status, setStatus] = useState("Ready to start secure consultation");
-  const [error, setError] = useState("");
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (callStarted) setShowControls(false);
+    }, 3000);
+  };
+
+  const copyRoomId = () => {
+    if (appointment?.roomId) {
+      navigator.clipboard.writeText(appointment.roomId);
+      toast.success("Room ID copied to clipboard");
+    }
+  };
 
   const { data: appointment, isLoading } = useQuery<AppointmentDetails>({
     queryKey: ["appointment", appointmentId],
@@ -68,6 +77,7 @@ const VideoCall = () => {
     setCallStarted(false);
     setRemoteJoined(false);
     setStatus("Call ended");
+    setShowControls(true);
   }, [appointmentId, stopLocalStream]);
 
   const createPeerConnection = useCallback((socket: Socket, roomId: string) => {
@@ -117,6 +127,9 @@ const VideoCall = () => {
         socket.emit("join-call", { appointmentId });
         setCallStarted(true);
         setStatus("Waiting for participant...");
+        
+        // Hide controls after 5 seconds initially
+        setTimeout(() => setShowControls(false), 5000);
       });
 
       socket.on("participant-joined", async () => {
@@ -150,6 +163,7 @@ const VideoCall = () => {
       socket.on("participant-left", () => {
         setRemoteJoined(false);
         setStatus("Participant left");
+        setShowControls(true);
       });
 
     } catch (err) {
@@ -176,13 +190,16 @@ const VideoCall = () => {
   };
 
   useEffect(() => {
-    return () => endCall();
+    return () => {
+      endCall();
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
   }, [endCall]);
 
   return (
     <DashboardLayout title="Live Consultation" subtitle={appointment ? `Secure Session: ${appointment.id}` : "Connecting..."}>
       <div className="grid xl:grid-cols-[1fr_380px] gap-6 min-h-[calc(100vh-180px)]">
-        <section className="relative flex flex-col gap-4 min-h-[600px]">
+        <section className="relative flex flex-col gap-4 min-h-[600px]" onMouseMove={handleMouseMove}>
           {error && (
             <Alert variant="destructive" className="absolute top-4 left-4 right-4 z-50 rounded-2xl shadow-lg">
               <AlertTitle>Hardware Access Error</AlertTitle>
@@ -225,7 +242,7 @@ const VideoCall = () => {
              </div>
 
              {/* Floating Controls Overlay */}
-             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 px-8 py-4 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl z-30 transition-all duration-300 group-hover:translate-y-0 translate-y-4 opacity-0 group-hover:opacity-100">
+             <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 px-8 py-4 rounded-full bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl z-30 transition-all duration-300 ${showControls ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}>
                 {!callStarted ? (
                    <Button variant="hero" size="lg" className="rounded-full px-10" onClick={startCall} disabled={isLoading || !appointment}>
                       <Video className="mr-2 h-5 w-5" /> Start Consultation
@@ -260,10 +277,23 @@ const VideoCall = () => {
                 )}
              </div>
 
-             {/* Status Badge */}
-             <div className="absolute top-6 left-6 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-3 z-30">
-                <div className={`h-2 w-2 rounded-full ${remoteJoined ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
-                <span className="text-xs font-bold text-white uppercase tracking-widest">{status}</span>
+             {/* Status Badge & Actions */}
+             <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-30 pointer-events-none">
+                <div className="px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 flex items-center gap-3">
+                   <div className={`h-2 w-2 rounded-full ${remoteJoined ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+                   <span className="text-xs font-bold text-white uppercase tracking-widest">{status}</span>
+                </div>
+                
+                {appointment?.roomId && (
+                  <Button 
+                    variant="soft" 
+                    size="sm" 
+                    className="pointer-events-auto rounded-xl bg-black/40 backdrop-blur-md border-white/10 text-white hover:bg-white/10"
+                    onClick={copyRoomId}
+                  >
+                    Copy Room ID
+                  </Button>
+                )}
              </div>
           </div>
         </section>

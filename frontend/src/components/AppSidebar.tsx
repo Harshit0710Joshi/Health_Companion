@@ -64,12 +64,23 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-4 space-y-4">
+        {!collapsed && (
+          <div className="flex items-center gap-3 px-2 py-1">
+             <div className="h-9 w-9 rounded-lg bg-primary-soft flex items-center justify-center text-primary font-bold text-xs">
+                AJ
+             </div>
+             <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold truncate">Alex Johnson</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Basic Plan</div>
+             </div>
+          </div>
+        )}
         <button
           onClick={logout}
-          className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-smooth"
+          className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-smooth group"
         >
-          <LogOut className="h-5 w-5 shrink-0" />
+          <LogOut className="h-5 w-5 shrink-0 group-hover:scale-110 transition-transform" />
           {!collapsed && <span>Logout</span>}
         </button>
       </SidebarFooter>

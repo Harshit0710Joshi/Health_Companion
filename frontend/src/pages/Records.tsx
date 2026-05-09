@@ -53,28 +53,43 @@ const Records = () => {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {records.map((r, i) => (
-          <div
-            key={r.id}
-            className="bg-card rounded-2xl p-6 border border-border shadow-card hover:shadow-elevated hover:-translate-y-1 transition-bounce animate-fade-up"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="h-11 w-11 rounded-xl bg-primary-soft flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary" />
+        {records.length > 0 ? (
+          records.map((r, i) => (
+            <div
+              key={r.id}
+              className="bg-card rounded-2xl p-6 border border-border shadow-card hover:shadow-elevated hover:-translate-y-1 transition-bounce animate-fade-up"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="h-11 w-11 rounded-xl bg-primary-soft flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-accent-soft text-accent-foreground">
+                  {r.type}
+                </span>
               </div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-accent-soft text-accent-foreground">
-                {r.type}
-              </span>
+              <h3 className="font-display font-bold text-lg mb-2">{r.title}</h3>
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{r.description}</p>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-t border-border pt-3">
+                <Calendar className="h-3.5 w-3.5" />
+                {new Date(r.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+              </div>
             </div>
-            <h3 className="font-display font-bold text-lg mb-2">{r.title}</h3>
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{r.description}</p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-t border-border pt-3">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(r.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
+          ))
+        ) : (
+          <div className="col-span-full py-20 flex flex-col items-center justify-center text-center animate-fade-up">
+            <div className="h-24 w-24 rounded-full bg-primary-soft flex items-center justify-center mb-6">
+              <FileHeart className="h-10 w-10 text-primary/40" />
             </div>
+            <h3 className="text-xl font-display font-bold mb-2">No records found</h3>
+            <p className="text-muted-foreground max-w-sm mb-8">
+              Keep all your medical reports, vaccinations, and consultations in one secure place.
+            </p>
+            <Button variant="soft" onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add Your First Record
+            </Button>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Add modal */}
