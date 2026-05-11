@@ -10,20 +10,45 @@ require('dotenv').config();
 const app = express();
 const prisma = new PrismaClient();
 
+const normalizeOrigin = (url) => url.replace(/\/$/, '');
+
 const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
   .split(',')
-  .map((s) => s.trim())
+  .map((s) => normalizeOrigin(s.trim()))
   .filter(Boolean);
+
+const allowListedVercelApp =
+  process.env.ALLOW_VERCEL_APP_ORIGINS !== 'false' &&
+  allowedOrigins.some((o) => {
+    try {
+      return new URL(o).hostname.endsWith('.vercel.app');
+    } catch {
+      return false;
+    }
+  });
+
+function isHttpsVercelPreview(origin) {
+  try {
+    const u = new URL(origin);
+    return u.protocol === 'https:' && u.hostname.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow non-browser clients (no Origin header) and same-origin.
     if (!origin) return cb(null, true);
-    // If nothing is configured, allow all (useful for local dev).
     if (allowedOrigins.length === 0) return cb(null, true);
-    // Exact match for configured origins (comma-separated list).
-    if (allowedOrigins.includes(origin)) return cb(null, true);
-    return cb(new Error(`CORS blocked origin: ${origin}`));
+
+    const normalized = normalizeOrigin(origin);
+    if (allowedOrigins.includes(normalized)) return cb(null, true);
+
+    // Any Vercel preview deploy (*.vercel.app) once you allowlisted a production Vercel URL
+    if (allowListedVercelApp && isHttpsVercelPreview(origin)) return cb(null, true);
+
+    console.warn(`[CORS] blocked origin: ${origin} (allowed: ${allowedOrigins.join(', ')})`);
+    return cb(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
@@ -376,7 +401,7 @@ app.use((req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 10000;
 const HOST = process.env.HOST || '0.0.0.0';
 const server = app.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);

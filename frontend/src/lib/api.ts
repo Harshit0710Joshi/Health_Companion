@@ -1,8 +1,37 @@
-export const API_ORIGIN =
-  import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') ||
-  `${window.location.protocol}//${window.location.hostname}:5001`;
+/**
+ * Backend origin only (no `/api`). Used for REST (`/api/...`) and Socket.IO.
+ *
+ * - Local dev: defaults to port 10000 on localhost.
+ * - Vercel/production: requires `VITE_API_URL` at build time (set in Vercel env, then redeploy).
+ */
+export function getApiOrigin(): string {
+  const raw = import.meta.env.VITE_API_URL;
+  const trimmed = typeof raw === 'string' ? raw.trim() : '';
+  const fromEnv = trimmed.replace(/\/api\/?$/, '');
+  if (fromEnv) {
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && fromEnv.startsWith('http:')) {
+      console.warn(
+        '[Health Companion] Frontend is HTTPS but VITE_API_URL is HTTP — browsers may block requests (mixed content). Use https:// on your backend URL.'
+      );
+    }
+    return fromEnv;
+  }
 
-const API_URL = `${API_ORIGIN}/api`;
+  const { protocol, hostname } = window.location;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+
+  if (isLocal) {
+    return `${protocol}//${hostname}:10000`;
+  }
+
+  throw new Error(
+    'Missing VITE_API_URL. In Vercel: Settings → Environment Variables → add VITE_API_URL = https://YOUR-BACKEND.onrender.com (no /api), apply to Production + Preview, then Redeploy.'
+  );
+}
+
+function getApiBaseUrl(): string {
+  return `${getApiOrigin()}/api`;
+}
 
 export const getAuthToken = () => localStorage.getItem('token');
 export const setAuthToken = (token: string) => localStorage.setItem('token', token);
@@ -42,7 +71,25 @@ export async function apiFetch<T = unknown>(endpoint: string, options: FetchOpti
     config.body = JSON.stringify(data);
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+  let url: string;
+  try {
+    url = `${getApiBaseUrl()}${endpoint}`;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'API URL is not configured.';
+    throw new Error(msg);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, config);
+  } catch (err) {
+    if (err instanceof TypeError && String(err.message).includes('fetch')) {
+      throw new Error(
+        `Cannot reach the API (${url}). Set VITE_API_URL on Vercel to your HTTPS backend, redeploy, and ensure Render has FRONTEND_URLS including your Vercel URL for CORS.`
+      );
+    }
+    throw err;
+  }
 
   if (response.status === 401) {
     const isLoginPage = window.location.pathname === '/login' || window.location.pathname === '/register';

@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { API_ORIGIN, apiFetch, getAuthToken } from "@/lib/api";
+import { apiFetch, getApiOrigin, getAuthToken } from "@/lib/api";
 import { toast } from "sonner";
 
 const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -123,7 +123,7 @@ const VideoCall = () => {
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-      const socket = io(API_ORIGIN, {
+      const socket = io(getApiOrigin(), {
         auth: { token: getAuthToken() },
         transports: ["websocket"],
       });
