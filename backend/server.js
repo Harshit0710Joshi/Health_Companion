@@ -10,12 +10,34 @@ require('dotenv').config();
 const app = express();
 const prisma = new PrismaClient();
 
+const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: (origin, cb) => {
+    // Allow non-browser clients (no Origin header) and same-origin.
+    if (!origin) return cb(null, true);
+    // If nothing is configured, allow all (useful for local dev).
+    if (allowedOrigins.length === 0) return cb(null, true);
+    // Exact match for configured origins (comma-separated list).
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked origin: ${origin}`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 app.use(express.json());
+
+// Basic health routes (useful for Render/Vercel checks)
+app.get('/', (req, res) => {
+  res.type('text/plain').send('Health Companion backend is running');
+});
+
+app.get('/health', (req, res) => {
+  res.json({ ok: true, service: 'health-companion-backend' });
+});
 
 // DEBUG LOGGER: See every request hitting the server
 app.use((req, res, next) => {
@@ -345,9 +367,19 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Unknown routes (registered before listen)
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    hint: 'Try GET /health or GET /api/doctors',
+  });
+});
+
 const PORT = process.env.PORT || 5001;
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
 });
 
 // Socket.io for Video Call Signaling
